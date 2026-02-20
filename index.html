@@ -2,37 +2,151 @@
 <html lang="pt-br">
 <head>
 <meta charset="UTF-8">
-<title>Circuito CHIP5 Oficial</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<title>Circuito CHIP5 2026 - Oficial</title>
 <style>
-body{font-family:Arial;background:#0f0f0f;color:#fff;padding:20px}
-h1{text-align:center;color:#FFD700}
-h2{margin-top:40px;color:#FFD700}
-table{width:100%;border-collapse:collapse;margin-top:15px;background:#1c1c1c}
-th,td{border:1px solid #333;padding:8px;text-align:center}
-th{background:#FFD700;color:#000}
-.top1{background:#6b5e00}
-.top2{background:#444}
-.top3{background:#5a3d00}
-input{margin:10px 0}
+body{
+font-family:Arial;
+background:#0d0d0d;
+color:#fff;
+padding:20px;
+}
+
+h1{
+text-align:center;
+color:#FFD700;
+}
+
+button{
+padding:8px 12px;
+background:#FFD700;
+border:none;
+cursor:pointer;
+font-weight:bold;
+margin:5px;
+}
+
+input,select{
+padding:5px;
+margin:5px;
+}
+
+table{
+width:100%;
+border-collapse:collapse;
+margin-top:20px;
+background:#1b1b1b;
+}
+
+th,td{
+padding:8px;
+border:1px solid #333;
+text-align:center;
+}
+
+th{
+background:#FFD700;
+color:#000;
+}
+
+.top1{background:#6b5e00;}
+.top2{background:#444;}
+.top3{background:#5a3d00;}
+
+.admin{
+background:#181818;
+padding:15px;
+margin-top:20px;
+border:1px solid #333;
+}
 </style>
 </head>
 <body>
 
 <h1>🏆 Circuito CHIP5 2026</h1>
 
-<h3>Importar Resultados (CSV)</h3>
-<input type="file" id="fileInput">
+<button onclick="mostrarAdmin()">🔐 Admin</button>
+<button onclick="window.print()">📄 Exportar PDF</button>
 
-<div id="rankings"></div>
+<div id="admin" style="display:none" class="admin">
+<input type="password" id="senha" placeholder="Senha">
+<button onclick="login()">Entrar</button>
 
-<canvas id="grafico" style="margin-top:40px;"></canvas>
+<div id="painel" style="display:none">
+
+<h3>Cadastrar Atleta</h3>
+<input id="nome" placeholder="Nome">
+<select id="sexo">
+<option>M</option>
+<option>F</option>
+</select>
+<select id="distancia">
+<option>5K</option>
+<option>10K</option>
+</select>
+<select id="categoria">
+<option>M30</option>
+<option>M40</option>
+<option>F30</option>
+<option>F40</option>
+</select>
+<button onclick="cadastrar()">Cadastrar</button>
+
+<h3>Lançar Resultado</h3>
+<input id="busca" placeholder="Nome atleta">
+<input id="etapa" type="number" min="1" max="8" placeholder="Etapa">
+<input id="posicao" type="number" placeholder="Posição">
+<button onclick="pontuar()">Lançar</button>
+
+</div>
+</div>
+
+<h2>Ranking Geral (com descarte da pior etapa)</h2>
+<table>
+<thead>
+<tr>
+<th>Pos</th>
+<th>Nome</th>
+<th>Sexo</th>
+<th>Dist</th>
+<th>Categoria</th>
+<th>Total Bruto</th>
+<th>Total c/ Descarte</th>
+</tr>
+</thead>
+<tbody id="ranking"></tbody>
+</table>
 
 <script>
 
-let atletas=[];
+let atletas = JSON.parse(localStorage.getItem("chip5")) || [];
 
-function pontuacao(pos){
+function salvar(){
+localStorage.setItem("chip5",JSON.stringify(atletas));
+}
+
+function mostrarAdmin(){
+document.getElementById("admin").style.display="block";
+}
+
+function login(){
+if(document.getElementById("senha").value==="chip52026"){
+document.getElementById("painel").style.display="block";
+}
+}
+
+function cadastrar(){
+atletas.push({
+nome:nome.value,
+sexo:sexo.value,
+distancia:distancia.value,
+categoria:categoria.value,
+pontos:[0,0,0,0,0,0,0,0]
+});
+salvar();
+atualizar();
+}
+
+function calcularPontos(pos){
 if(pos==1)return 100;
 if(pos==2)return 80;
 if(pos==3)return 70;
@@ -46,106 +160,54 @@ if(pos==10)return 25;
 return 10;
 }
 
-document.getElementById("fileInput").addEventListener("change",function(e){
-let reader=new FileReader();
-reader.onload=function(){
-let linhas=reader.result.split("\n");
-linhas.shift();
-
-linhas.forEach(l=>{
-let c=l.split(",");
-if(c.length>4){
-let nome=c[0];
-let sexo=c[1];
-let dist=c[2];
-let cat=c[3];
-let etapa=parseInt(c[4])-1;
-let pos=parseInt(c[5]);
-
-let atleta=atletas.find(a=>a.nome===nome);
-if(!atleta){
-atleta={nome,sexo,dist,cat,pontos:[0,0,0,0,0,0,0,0]};
-atletas.push(atleta);
-}
-atleta.pontos[etapa]=pontuacao(pos);
-}
-});
-
+function pontuar(){
+let atleta = atletas.find(a=>a.nome===busca.value);
+if(atleta){
+let etapaIndex = etapa.value-1;
+atleta.pontos[etapaIndex] = calcularPontos(posicao.value);
+salvar();
 atualizar();
 }
-reader.readAsText(e.target.files[0]);
-});
+}
 
 function atualizar(){
 
-let container=document.getElementById("rankings");
-container.innerHTML="";
+let tabela = document.getElementById("ranking");
+tabela.innerHTML="";
 
-let grupos=[
-{titulo:"5K Masculino",f:(a)=>a.dist=="5K"&&a.sexo=="M"},
-{titulo:"5K Feminino",f:(a)=>a.dist=="5K"&&a.sexo=="F"},
-{titulo:"10K Masculino",f:(a)=>a.dist=="10K"&&a.sexo=="M"},
-{titulo:"10K Feminino",f:(a)=>a.dist=="10K"&&a.sexo=="F"},
-];
-
-grupos.forEach(g=>{
-
-let lista=atletas.filter(g.f);
-
-lista.forEach(a=>{
-a.total=a.pontos.reduce((s,p)=>s+p,0);
-let menor=Math.min(...a.pontos);
-a.totalDesc=a.total-menor;
+atletas.forEach(a=>{
+a.totalBruto = a.pontos.reduce((s,p)=>s+p,0);
+let menor = Math.min(...a.pontos);
+a.totalDesc = a.totalBruto - menor;
 });
 
-lista.sort((a,b)=>b.totalDesc-a.totalDesc);
+atletas.sort((a,b)=>b.totalDesc-a.totalDesc);
 
-if(lista.length>0){
+atletas.forEach((a,i)=>{
 
-container.innerHTML+=`<h2>${g.titulo}</h2>`;
-
-let tabela="<table><tr><th>Pos</th><th>Nome</th><th>Categoria</th><th>Total c/ Descarte</th></tr>";
-
-lista.forEach((a,i)=>{
 let classe="";
 if(i==0)classe="top1";
 if(i==1)classe="top2";
 if(i==2)classe="top3";
 
-tabela+=`<tr class="${classe}">
+tabela.innerHTML+=`
+<tr class="${classe}">
 <td>${i+1}</td>
 <td>${a.nome}</td>
-<td>${a.cat}</td>
-<td>${a.totalDesc}</td>
-</tr>`;
+<td>${a.sexo}</td>
+<td>${a.distancia}</td>
+<td>${a.categoria}</td>
+<td>${a.totalBruto}</td>
+<td><b>${a.totalDesc}</b></td>
+</tr>
+`;
 });
 
-tabela+="</table>";
-container.innerHTML+=tabela;
-}
-});
-
-gerarGrafico();
 }
 
-function gerarGrafico(){
-let ctx=document.getElementById("grafico");
-if(atletas.length==0)return;
-
-let a=atletas[0];
-
-new Chart(ctx,{
-type:"line",
-data:{
-labels:["E1","E2","E3","E4","E5","E6","E7","E8"],
-datasets:[{
-label:a.nome,
-data:a.pontos
-}]
-}
-});
-}
+atualizar();
 
 </script>
+
 </body>
 </html>

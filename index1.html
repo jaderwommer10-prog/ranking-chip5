@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<title>Circuito CHIP5 de Corridas</title>
+<style>
+body{
+font-family:Arial;
+background:#111;
+color:#fff;
+margin:0;
+padding:20px;
+}
+
+h1{
+text-align:center;
+color:#FFD700;
+}
+
+select{
+padding:8px;
+margin:10px;
+}
+
+table{
+width:100%;
+border-collapse:collapse;
+margin-top:20px;
+background:#222;
+}
+
+th,td{
+padding:10px;
+border:1px solid #444;
+text-align:center;
+}
+
+th{
+background:#FFD700;
+color:#000;
+}
+
+img{
+width:50px;
+border-radius:50%;
+}
+
+.patrocinadores{
+margin-top:40px;
+text-align:center;
+}
+
+.patrocinadores img{
+height:60px;
+margin:10px;
+}
+</style>
+</head>
+<body>
+
+<h1>🏆 Circuito CHIP5 de Corridas 2026</h1>
+
+<select id="distancia" onchange="filtrar()">
+<option value="5K">5K</option>
+<option value="10K">10K</option>
+</select>
+
+<select id="categoria" onchange="filtrar()">
+<option value="todas">Todas Categorias</option>
+<option value="M30">M30</option>
+<option value="M40">M40</option>
+<option value="F30">F30</option>
+<option value="F40">F40</option>
+</select>
+
+<table>
+<thead>
+<tr>
+<th>Pos</th>
+<th>Foto</th>
+<th>Nome</th>
+<th>Categoria</th>
+<th>E1</th>
+<th>E2</th>
+<th>E3</th>
+<th>E4</th>
+<th>E5</th>
+<th>E6</th>
+<th>E7</th>
+<th>E8</th>
+<th>Total</th>
+</tr>
+</thead>
+<tbody id="ranking"></tbody>
+</table>
+
+<div class="patrocinadores">
+<h2>Patrocinadores Oficiais</h2>
+<img src="https://via.placeholder.com/150x60?text=Patrocinador+1">
+<img src="https://via.placeholder.com/150x60?text=Patrocinador+2">
+<img src="https://via.placeholder.com/150x60?text=Patrocinador+3">
+</div>
+
+<script>
+
+const atletas = [
+{
+nome:"Carlos Silva",
+foto:"https://i.pravatar.cc/50?img=1",
+categoria:"M30",
+distancia:"5K",
+pontos:[100,80,100,70,100,80,100,100]
+},
+{
+nome:"João Souza",
+foto:"https://i.pravatar.cc/50?img=2",
+categoria:"M40",
+distancia:"5K",
+pontos:[80,70,60,80,70,60,80,70]
+},
+{
+nome:"Maria Lima",
+foto:"https://i.pravatar.cc/50?img=3",
+categoria:"F30",
+distancia:"10K",
+pontos:[100,100,100,100,80,100,100,100]
+},
+{
+nome:"Ana Costa",
+foto:"https://i.pravatar.cc/50?img=4",
+categoria:"F40",
+distancia:"10K",
+pontos:[80,70,80,70,60,80,70,60]
+}
+];
+
+function filtrar(){
+let distancia = document.getElementById("distancia").value;
+let categoria = document.getElementById("categoria").value;
+
+let lista = atletas.filter(a => 
+a.distancia === distancia &&
+(categoria === "todas" || a.categoria === categoria)
+);
+
+lista.forEach(a => {
+a.total = a.pontos.reduce((soma,p)=> soma+p,0);
+});
+
+lista.sort((a,b)=> b.total - a.total);
+
+let tabela = document.getElementById("ranking");
+tabela.innerHTML="";
+
+lista.forEach((a,index)=>{
+tabela.innerHTML += `
+<tr>
+<td>${index+1}</td>
+<td><img src="${a.foto}"></td>
+<td>${a.nome}</td>
+<td>${a.categoria}</td>
+<td>${a.pontos[0]}</td>
+<td>${a.pontos[1]}</td>
+<td>${a.pontos[2]}</td>
+<td>${a.pontos[3]}</td>
+<td>${a.pontos[4]}</td>
+<td>${a.pontos[5]}</td>
+<td>${a.pontos[6]}</td>
+<td>${a.pontos[7]}</td>
+<td><b>${a.total}</b></td>
+</tr>
+`;
+});
+}
+
+filtrar();
+
+</script>
+
+</body>
+</html>

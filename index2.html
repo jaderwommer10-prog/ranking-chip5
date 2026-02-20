@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<title>Circuito CHIP5 2026</title>
+<style>
+body{
+font-family:Arial;
+background:#0f0f0f;
+color:#fff;
+margin:0;
+padding:20px;
+}
+
+h1{
+text-align:center;
+color:#FFD700;
+}
+
+button{
+padding:8px 15px;
+background:#FFD700;
+border:none;
+cursor:pointer;
+margin:5px;
+font-weight:bold;
+}
+
+input,select{
+padding:5px;
+margin:5px;
+}
+
+table{
+width:100%;
+border-collapse:collapse;
+margin-top:20px;
+background:#1b1b1b;
+}
+
+th,td{
+padding:8px;
+border:1px solid #333;
+text-align:center;
+}
+
+th{
+background:#FFD700;
+color:#000;
+}
+
+.top3{
+background:#222;
+padding:15px;
+margin:15px 0;
+}
+
+.admin{
+background:#181818;
+padding:15px;
+margin-top:20px;
+border:1px solid #333;
+}
+</style>
+</head>
+<body>
+
+<h1>🏆 Circuito CHIP5 de Corridas 2026</h1>
+
+<button onclick="mostrarAdmin()">🔐 Área Admin</button>
+<button onclick="exportarPDF()">📄 Exportar PDF</button>
+
+<div id="adminArea" style="display:none" class="admin">
+<h2>Painel Administrativo</h2>
+
+<input type="password" id="senha" placeholder="Senha">
+<button onclick="login()">Entrar</button>
+
+<div id="painel" style="display:none">
+
+<h3>Cadastrar Atleta</h3>
+<input id="nome" placeholder="Nome">
+<select id="distancia">
+<option>5K</option>
+<option>10K</option>
+</select>
+<select id="categoria">
+<option>M30</option>
+<option>M40</option>
+<option>F30</option>
+<option>F40</option>
+</select>
+<input id="foto" placeholder="URL Foto">
+<button onclick="cadastrar()">Cadastrar</button>
+
+<h3>Lançar Pontos (Etapa 1 a 8)</h3>
+<input id="nomeBusca" placeholder="Nome atleta">
+<input id="etapa" type="number" min="1" max="8" placeholder="Etapa">
+<input id="ponto" type="number" placeholder="Pontos">
+<button onclick="lancar()">Lançar</button>
+
+</div>
+</div>
+
+<h2>Ranking</h2>
+<table>
+<thead>
+<tr>
+<th>Pos</th>
+<th>Nome</th>
+<th>Categoria</th>
+<th>Distância</th>
+<th>Total</th>
+</tr>
+</thead>
+<tbody id="ranking"></tbody>
+</table>
+
+<script>
+
+let atletas = JSON.parse(localStorage.getItem("atletas")) || [];
+
+function salvar(){
+localStorage.setItem("atletas",JSON.stringify(atletas));
+}
+
+function mostrarAdmin(){
+document.getElementById("adminArea").style.display="block";
+}
+
+function login(){
+let senha = document.getElementById("senha").value;
+if(senha==="chip52026"){
+document.getElementById("painel").style.display="block";
+}else{
+alert("Senha incorreta");
+}
+}
+
+function cadastrar(){
+let atleta = {
+nome:document.getElementById("nome").value,
+distancia:document.getElementById("distancia").value,
+categoria:document.getElementById("categoria").value,
+foto:document.getElementById("foto").value,
+pontos:[0,0,0,0,0,0,0,0]
+};
+
+atletas.push(atleta);
+salvar();
+atualizar();
+}
+
+function lancar(){
+let nome = document.getElementById("nomeBusca").value;
+let etapa = document.getElementById("etapa").value-1;
+let ponto = parseInt(document.getElementById("ponto").value);
+
+let atleta = atletas.find(a=>a.nome===nome);
+
+if(atleta){
+atleta.pontos[etapa]=ponto;
+salvar();
+atualizar();
+}
+}
+
+function atualizar(){
+let tabela=document.getElementById("ranking");
+tabela.innerHTML="";
+
+atletas.forEach(a=>{
+a.total = a.pontos.reduce((s,p)=>s+p,0);
+});
+
+atletas.sort((a,b)=>b.total-a.total);
+
+atletas.forEach((a,i)=>{
+tabela.innerHTML+=`
+<tr>
+<td>${i+1}</td>
+<td>${a.nome}</td>
+<td>${a.categoria}</td>
+<td>${a.distancia}</td>
+<td>${a.total}</td>
+</tr>
+`;
+});
+}
+
+function exportarPDF(){
+window.print();
+}
+
+atualizar();
+
+</script>
+
+</body>
+</html>

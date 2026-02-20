@@ -2,37 +2,32 @@
 <html lang="pt-br">
 <head>
 <meta charset="UTF-8">
-<title>Circuito CHIP5 Oficial</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<title>Circuito CHIP5 6.1</title>
 <style>
-body{font-family:Arial;background:#0f0f0f;color:#fff;padding:20px}
+body{font-family:Arial;background:#111;color:#fff;padding:20px}
 h1{text-align:center;color:#FFD700}
-h2{margin-top:40px;color:#FFD700}
-table{width:100%;border-collapse:collapse;margin-top:15px;background:#1c1c1c}
+table{width:100%;border-collapse:collapse;margin-top:20px;background:#1c1c1c}
 th,td{border:1px solid #333;padding:8px;text-align:center}
 th{background:#FFD700;color:#000}
 .top1{background:#6b5e00}
 .top2{background:#444}
 .top3{background:#5a3d00}
-input{margin:10px 0}
 </style>
 </head>
 <body>
 
 <h1>🏆 Circuito CHIP5 2026</h1>
 
-<h3>Importar Resultados (CSV)</h3>
-<input type="file" id="fileInput">
+<h3>Importar Planilha CSV</h3>
+<input type="file" id="file">
 
-<div id="rankings"></div>
-
-<canvas id="grafico" style="margin-top:40px;"></canvas>
+<div id="resultado"></div>
 
 <script>
 
 let atletas=[];
 
-function pontuacao(pos){
+function pontos(pos){
 if(pos==1)return 100;
 if(pos==2)return 80;
 if(pos==3)return 70;
@@ -46,67 +41,70 @@ if(pos==10)return 25;
 return 10;
 }
 
-document.getElementById("fileInput").addEventListener("change",function(e){
+document.getElementById("file").addEventListener("change",function(e){
+
 let reader=new FileReader();
+
 reader.onload=function(){
-let linhas=reader.result.split("\n");
+
+let texto=reader.result;
+
+let linhas=texto.split("\n");
 linhas.shift();
 
-linhas.forEach(l=>{
-let c=l.split(",");
-if(c.length>4){
-let nome=c[0];
-let sexo=c[1];
-let dist=c[2];
-let cat=c[3];
+linhas.forEach(linha=>{
+
+if(!linha.trim()) return;
+
+let separador = linha.includes(";") ? ";" : ",";
+
+let c=linha.split(separador);
+
+if(c.length<6) return;
+
+let nome=c[0].trim();
+let sexo=c[1].trim();
+let dist=c[2].trim();
+let cat=c[3].trim();
 let etapa=parseInt(c[4])-1;
 let pos=parseInt(c[5]);
 
 let atleta=atletas.find(a=>a.nome===nome);
+
 if(!atleta){
-atleta={nome,sexo,dist,cat,pontos:[0,0,0,0,0,0,0,0]};
+atleta={nome,sexo,dist,cat,p:[0,0,0,0,0,0,0,0]};
 atletas.push(atleta);
 }
-atleta.pontos[etapa]=pontuacao(pos);
-}
+
+atleta.p[etapa]=pontos(pos);
+
 });
 
-atualizar();
-}
+gerar();
+
+};
+
 reader.readAsText(e.target.files[0]);
+
 });
 
-function atualizar(){
+function gerar(){
 
-let container=document.getElementById("rankings");
-container.innerHTML="";
+let div=document.getElementById("resultado");
+div.innerHTML="";
 
-let grupos=[
-{titulo:"5K Masculino",f:(a)=>a.dist=="5K"&&a.sexo=="M"},
-{titulo:"5K Feminino",f:(a)=>a.dist=="5K"&&a.sexo=="F"},
-{titulo:"10K Masculino",f:(a)=>a.dist=="10K"&&a.sexo=="M"},
-{titulo:"10K Feminino",f:(a)=>a.dist=="10K"&&a.sexo=="F"},
-];
-
-grupos.forEach(g=>{
-
-let lista=atletas.filter(g.f);
-
-lista.forEach(a=>{
-a.total=a.pontos.reduce((s,p)=>s+p,0);
-let menor=Math.min(...a.pontos);
-a.totalDesc=a.total-menor;
+atletas.forEach(a=>{
+a.total=a.p.reduce((s,v)=>s+v,0);
+let menor=Math.min(...a.p);
+a.final=a.total-menor;
 });
 
-lista.sort((a,b)=>b.totalDesc-a.totalDesc);
+atletas.sort((a,b)=>b.final-a.final);
 
-if(lista.length>0){
+let tabela="<table><tr><th>Pos</th><th>Nome</th><th>Dist</th><th>Categoria</th><th>Total c/ Descarte</th></tr>";
 
-container.innerHTML+=`<h2>${g.titulo}</h2>`;
+atletas.forEach((a,i)=>{
 
-let tabela="<table><tr><th>Pos</th><th>Nome</th><th>Categoria</th><th>Total c/ Descarte</th></tr>";
-
-lista.forEach((a,i)=>{
 let classe="";
 if(i==0)classe="top1";
 if(i==1)classe="top2";
@@ -115,37 +113,19 @@ if(i==2)classe="top3";
 tabela+=`<tr class="${classe}">
 <td>${i+1}</td>
 <td>${a.nome}</td>
+<td>${a.dist}</td>
 <td>${a.cat}</td>
-<td>${a.totalDesc}</td>
+<td>${a.final}</td>
 </tr>`;
 });
 
 tabela+="</table>";
-container.innerHTML+=tabela;
-}
-});
 
-gerarGrafico();
-}
+div.innerHTML=tabela;
 
-function gerarGrafico(){
-let ctx=document.getElementById("grafico");
-if(atletas.length==0)return;
-
-let a=atletas[0];
-
-new Chart(ctx,{
-type:"line",
-data:{
-labels:["E1","E2","E3","E4","E5","E6","E7","E8"],
-datasets:[{
-label:a.nome,
-data:a.pontos
-}]
-}
-});
 }
 
 </script>
+
 </body>
 </html>

@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Circuito CHIP5 Ranking</title>
+<style>
+body{
+font-family:Arial;
+background:#0a0a0a;
+color:white;
+margin:0;
+padding:30px;
+}
+h1,h2{
+color:#ff6600;
+text-align:center;
+}
+textarea{
+width:100%;
+padding:10px;
+}
+table{
+width:100%;
+border-collapse:collapse;
+margin-bottom:30px;
+}
+th{
+background:#222;
+padding:10px;
+}
+td{
+background:#1a1a1a;
+padding:8px;
+text-align:center;
+}
+button{
+padding:12px 25px;
+background:#ff6600;
+color:white;
+border:none;
+font-weight:bold;
+cursor:pointer;
+}
+img{
+border-radius:50%;
+object-fit:cover;
+}
+</style>
+</head>
+<body>
+
+<h1>CIRCUITO CHIP5 DE CORRIDAS</h1>
+<p style="text-align:center;">Ranking Oficial - 8 Etapas (Melhores 6)</p>
+
+<textarea id="dados" rows="8"
+placeholder="Nome,Categoria,Equipe,Distancia(5K/10K),Etapa,Colocacao,URL_Foto"></textarea>
+
+<br><br>
+
+<select id="filtroCategoria"></select>
+<button onclick="gerarRanking()">ATUALIZAR RANKING</button>
+
+<br><br>
+<div id="resultado"></div>
+
+<script>
+const MELHORES_ETAPAS=6;
+
+function pontos(col){
+if(col==1) return 100;
+if(col==2) return 80;
+if(col==3) return 70;
+if(col==4) return 60;
+if(col==5) return 50;
+if(col<=10) return 40;
+return 20;
+}
+
+function gerarRanking(){
+let texto=document.getElementById("dados").value.trim();
+let linhas=texto.split("\n");
+let atletas={};
+let categorias=new Set();
+
+linhas.forEach(l=>{
+let [nome,categoria,equipe,dist,etapa,col,foto]=l.split(",");
+col=parseInt(col);
+let pts=pontos(col);
+let chave=nome+"_"+dist;
+
+categorias.add(categoria);
+
+if(!atletas[chave]){
+atletas[chave]={nome,categoria,equipe,dist,foto,etapas:[]};
+}
+
+atletas[chave].etapas.push(pts);
+});
+
+let select=document.getElementById("filtroCategoria");
+select.innerHTML='<option value="TODAS">Todas Categorias</option>';
+categorias.forEach(c=>select.innerHTML+=`<option value="${c}">${c}</option>`);
+
+mostrarRanking(Object.values(atletas));
+}
+
+function mostrarRanking(lista){
+let filtro=document.getElementById("filtroCategoria").value;
+let html="";
+
+["5K","10K"].forEach(dist=>{
+let grupo=lista.filter(a=>a.dist==dist);
+if(filtro!="TODAS") grupo=grupo.filter(a=>a.categoria==filtro);
+
+grupo.forEach(a=>{
+a.etapas.sort((a,b)=>b-a);
+a.total=a.etapas.slice(0,MELHORES_ETAPAS).reduce((s,v)=>s+v,0);
+});
+
+grupo.sort((a,b)=>b.total-a.total);
+
+html+=`<h2>Ranking ${dist}</h2>`;
+html+="<table>";
+html+="<tr><th>Pos</th><th>Foto</th><th>Nome</th><th>Equipe</th><th>Categoria</th><th>Pontos</th></tr>";
+
+grupo.forEach((a,i)=>{
+let medalha=i==0?"🥇":i==1?"🥈":i==2?"🥉":"";
+html+=`<tr>
+<td>${i+1} ${medalha}</td>
+<td><img src="${a.foto}" width="60" height="60"></td>
+<td>${a.nome}</td>
+<td>${a.equipe}</td>
+<td>${a.categoria}</td>
+<td style="color:#ff6600;font-weight:bold;">${a.total}</td>
+</tr>`;
+});
+
+html+="</table>";
+});
+
+document.getElementById("resultado").innerHTML=html;
+}
+
+document.getElementById("filtroCategoria").addEventListener("change",()=>gerarRanking());
+</script>
+
+</body>
+</html>

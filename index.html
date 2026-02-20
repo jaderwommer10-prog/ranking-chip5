@@ -1,147 +1,212 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-br">
 <head>
 <meta charset="UTF-8">
-<title>Circuito CHIP5 Ranking</title>
+<title>Circuito CHIP5 2026 - Oficial</title>
 <style>
 body{
 font-family:Arial;
-background:#0a0a0a;
-color:white;
-margin:0;
-padding:30px;
+background:#0d0d0d;
+color:#fff;
+padding:20px;
 }
-h1,h2{
-color:#ff6600;
+
+h1{
 text-align:center;
+color:#FFD700;
 }
-textarea{
-width:100%;
-padding:10px;
+
+button{
+padding:8px 12px;
+background:#FFD700;
+border:none;
+cursor:pointer;
+font-weight:bold;
+margin:5px;
 }
+
+input,select{
+padding:5px;
+margin:5px;
+}
+
 table{
 width:100%;
 border-collapse:collapse;
-margin-bottom:30px;
+margin-top:20px;
+background:#1b1b1b;
 }
-th{
-background:#222;
-padding:10px;
-}
-td{
-background:#1a1a1a;
+
+th,td{
 padding:8px;
+border:1px solid #333;
 text-align:center;
 }
-button{
-padding:12px 25px;
-background:#ff6600;
-color:white;
-border:none;
-font-weight:bold;
-cursor:pointer;
+
+th{
+background:#FFD700;
+color:#000;
 }
-img{
-border-radius:50%;
-object-fit:cover;
+
+.top1{background:#6b5e00;}
+.top2{background:#444;}
+.top3{background:#5a3d00;}
+
+.admin{
+background:#181818;
+padding:15px;
+margin-top:20px;
+border:1px solid #333;
 }
 </style>
 </head>
 <body>
 
-<h1>CIRCUITO CHIP5 DE CORRIDAS</h1>
-<p style="text-align:center;">Ranking Oficial - 8 Etapas (Melhores 6)</p>
+<h1>🏆 Circuito CHIP5 2026</h1>
 
-<textarea id="dados" rows="8"
-placeholder="Nome,Categoria,Equipe,Distancia(5K/10K),Etapa,Colocacao,URL_Foto"></textarea>
+<button onclick="mostrarAdmin()">🔐 Admin</button>
+<button onclick="window.print()">📄 Exportar PDF</button>
 
-<br><br>
+<div id="admin" style="display:none" class="admin">
+<input type="password" id="senha" placeholder="Senha">
+<button onclick="login()">Entrar</button>
 
-<select id="filtroCategoria"></select>
-<button onclick="gerarRanking()">ATUALIZAR RANKING</button>
+<div id="painel" style="display:none">
 
-<br><br>
-<div id="resultado"></div>
+<h3>Cadastrar Atleta</h3>
+<input id="nome" placeholder="Nome">
+<select id="sexo">
+<option>M</option>
+<option>F</option>
+</select>
+<select id="distancia">
+<option>5K</option>
+<option>10K</option>
+</select>
+<select id="categoria">
+<option>M30</option>
+<option>M40</option>
+<option>F30</option>
+<option>F40</option>
+</select>
+<button onclick="cadastrar()">Cadastrar</button>
+
+<h3>Lançar Resultado</h3>
+<input id="busca" placeholder="Nome atleta">
+<input id="etapa" type="number" min="1" max="8" placeholder="Etapa">
+<input id="posicao" type="number" placeholder="Posição">
+<button onclick="pontuar()">Lançar</button>
+
+</div>
+</div>
+
+<h2>Ranking Geral (com descarte da pior etapa)</h2>
+<table>
+<thead>
+<tr>
+<th>Pos</th>
+<th>Nome</th>
+<th>Sexo</th>
+<th>Dist</th>
+<th>Categoria</th>
+<th>Total Bruto</th>
+<th>Total c/ Descarte</th>
+</tr>
+</thead>
+<tbody id="ranking"></tbody>
+</table>
 
 <script>
-const MELHORES_ETAPAS=6;
 
-function pontos(col){
-if(col==1) return 100;
-if(col==2) return 80;
-if(col==3) return 70;
-if(col==4) return 60;
-if(col==5) return 50;
-if(col<=10) return 40;
-return 20;
+let atletas = JSON.parse(localStorage.getItem("chip5")) || [];
+
+function salvar(){
+localStorage.setItem("chip5",JSON.stringify(atletas));
 }
 
-function gerarRanking(){
-let texto=document.getElementById("dados").value.trim();
-let linhas=texto.split("\n");
-let atletas={};
-let categorias=new Set();
-
-linhas.forEach(l=>{
-let [nome,categoria,equipe,dist,etapa,col,foto]=l.split(",");
-col=parseInt(col);
-let pts=pontos(col);
-let chave=nome+"_"+dist;
-
-categorias.add(categoria);
-
-if(!atletas[chave]){
-atletas[chave]={nome,categoria,equipe,dist,foto,etapas:[]};
+function mostrarAdmin(){
+document.getElementById("admin").style.display="block";
 }
 
-atletas[chave].etapas.push(pts);
+function login(){
+if(document.getElementById("senha").value==="chip52026"){
+document.getElementById("painel").style.display="block";
+}
+}
+
+function cadastrar(){
+atletas.push({
+nome:nome.value,
+sexo:sexo.value,
+distancia:distancia.value,
+categoria:categoria.value,
+pontos:[0,0,0,0,0,0,0,0]
+});
+salvar();
+atualizar();
+}
+
+function calcularPontos(pos){
+if(pos==1)return 100;
+if(pos==2)return 80;
+if(pos==3)return 70;
+if(pos==4)return 60;
+if(pos==5)return 50;
+if(pos==6)return 45;
+if(pos==7)return 40;
+if(pos==8)return 35;
+if(pos==9)return 30;
+if(pos==10)return 25;
+return 10;
+}
+
+function pontuar(){
+let atleta = atletas.find(a=>a.nome===busca.value);
+if(atleta){
+let etapaIndex = etapa.value-1;
+atleta.pontos[etapaIndex] = calcularPontos(posicao.value);
+salvar();
+atualizar();
+}
+}
+
+function atualizar(){
+
+let tabela = document.getElementById("ranking");
+tabela.innerHTML="";
+
+atletas.forEach(a=>{
+a.totalBruto = a.pontos.reduce((s,p)=>s+p,0);
+let menor = Math.min(...a.pontos);
+a.totalDesc = a.totalBruto - menor;
 });
 
-let select=document.getElementById("filtroCategoria");
-select.innerHTML='<option value="TODAS">Todas Categorias</option>';
-categorias.forEach(c=>select.innerHTML+=`<option value="${c}">${c}</option>`);
+atletas.sort((a,b)=>b.totalDesc-a.totalDesc);
 
-mostrarRanking(Object.values(atletas));
-}
+atletas.forEach((a,i)=>{
 
-function mostrarRanking(lista){
-let filtro=document.getElementById("filtroCategoria").value;
-let html="";
+let classe="";
+if(i==0)classe="top1";
+if(i==1)classe="top2";
+if(i==2)classe="top3";
 
-["5K","10K"].forEach(dist=>{
-let grupo=lista.filter(a=>a.dist==dist);
-if(filtro!="TODAS") grupo=grupo.filter(a=>a.categoria==filtro);
-
-grupo.forEach(a=>{
-a.etapas.sort((a,b)=>b-a);
-a.total=a.etapas.slice(0,MELHORES_ETAPAS).reduce((s,v)=>s+v,0);
-});
-
-grupo.sort((a,b)=>b.total-a.total);
-
-html+=`<h2>Ranking ${dist}</h2>`;
-html+="<table>";
-html+="<tr><th>Pos</th><th>Foto</th><th>Nome</th><th>Equipe</th><th>Categoria</th><th>Pontos</th></tr>";
-
-grupo.forEach((a,i)=>{
-let medalha=i==0?"🥇":i==1?"🥈":i==2?"🥉":"";
-html+=`<tr>
-<td>${i+1} ${medalha}</td>
-<td><img src="${a.foto}" width="60" height="60"></td>
+tabela.innerHTML+=`
+<tr class="${classe}">
+<td>${i+1}</td>
 <td>${a.nome}</td>
-<td>${a.equipe}</td>
+<td>${a.sexo}</td>
+<td>${a.distancia}</td>
 <td>${a.categoria}</td>
-<td style="color:#ff6600;font-weight:bold;">${a.total}</td>
-</tr>`;
+<td>${a.totalBruto}</td>
+<td><b>${a.totalDesc}</b></td>
+</tr>
+`;
 });
 
-html+="</table>";
-});
-
-document.getElementById("resultado").innerHTML=html;
 }
 
-document.getElementById("filtroCategoria").addEventListener("change",()=>gerarRanking());
+atualizar();
+
 </script>
 
 </body>
